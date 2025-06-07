@@ -1,98 +1,87 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
-from numpy.linalg import matrix_rank
+from numpy.linalg import matrix_rank, pinv, norm
 from utility_functions import Conv_coordinates
 import math
 
-# ----------------------- Loading Dipole and EEG_Lead_Field_1 -----------------------
-#TODO: Load the dipole coordinates data from file
-# data1 = ...
-#TODO: Load the EEG lead field matrix
-# data2 = ...
-#TODO: Load the EEG measurement vector
-# data3 = ...
+# ----------------------- Loading Dipole and EEG_Lead_Field_2 -----------------------
+# Load dipole coordinates for plotting
+data1 = np.load('Dataset/EEG/Dipole_coordinates_2.npz')
+# Load the pre-computed lead field for the single known source
+data2 = np.load('Dataset/EEG/EEG_Lead_Field_2.npz')
+# Load the EEG measurement vector
+data3 = np.load('Dataset/EEG/EEG_Measurement_Vector.npz')
 
-#TODO: Extract coordinates from the dipole data
-# rq_x = ...
-# rq_y = ...
-# rq_z = ...
-# rq = ...
+# Extract coordinates for the source at index 104
+rq = data1['rq']
 
-#TODO: Define the orientation vector for the dipole
-# q_0 = ...
+# Define the true orientation vector for error calculation
+q_0 = np.array([0, 0, 1])
 
-#TODO: Extract the lead field matrix and measurement vector
-# L = ...
-# V = dat...
+# Extract the lead field matrix and measurement vector
+L = data2['L']  # This is L_single, with shape (33, 3)
+V = data3['V']
 
-#TODO: Calculate and print the rank of the lead field matrix
-# Rank = ...
-# print("Rank of L = ", Rank)
+# Calculate and print the rank of the lead field matrix
+Rank = matrix_rank(L)
+print(f"Shape of L = {L.shape}")
+print(f"Rank of L = {Rank}")  # Expected to be 3
 
 # --------------------------- Calculate Current Source Vector ------------------------
-#TODO: Calculate the current source vector using pseudoinverse
-# q = ...
+# Calculate the current source vector using pseudoinverse
+q = pinv(L) @ V
 
-#TODO: Print shape and value of current source vector
-# print('shape of q = ', q.shape)
-# print('q_0 = q =', q)
+# Print shape and value of current source vector
+print(f"Shape of estimated q = {q.shape}")
+print(f"Estimated q vector (q_0) = {q}")
 
-#TODO: Calculate magnitude of the current source
-# norm_q = ...
-# print('norm of q = ', norm_q)
+# Calculate magnitude of the current source
+norm_q = norm(q)
+print(f"Norm of estimated q = {norm_q}")
 
 # --------------------------- Calculate the Relative Error -------------------------
-#TODO: Calculate relative q0 error
-# relative_q0_error = ...
-# print('The relative q0 error =', relative_q0_error)
-#TODO: Calculate relative q error
-# relative_q_error = ...
-# print('The relative q error =', relative_q_error)
+# Calculate relative q0 error
+relative_q0_error = norm(q - q_0) / norm(q_0)
+print(f"The relative q0 error = {relative_q0_error * 100:.2f}%")
 
+# In this case, the total error is the same as the error for q0
+relative_q_error = relative_q0_error
+print(f"The total relative q error = {relative_q_error * 100:.2f}%")
 
-# ------------------------------------------ Visiualize Current_source_vector -------------------------------------------------
-
+# -------------------------- Visiualize Current_source_vector -------------------------
 fig = plt.figure(figsize=(9, 6))
 ax = fig.add_subplot(111, projection='3d')
-plt.title('Magnitude of Current Sources')       # change
+plt.title('EEG Estimated Current Source (Parametric)')
 
-# Set size of each axis
-ax.set_box_aspect([1, 1, 1])  # This will make the axes equally spaced
+# Set axis properties
+ax.set_box_aspect([1, 1, 1])
 ax.set_xlim([-0.08, 0.08])
 ax.set_ylim([-0.08, 0.08])
 ax.set_zlim([-0.08, 0.08])
-
-# Set the grid grading for each axis
 ax.set_xticks(np.arange(-0.08, 0.08, 0.04))
 ax.set_yticks(np.arange(-0.08, 0.08, 0.04))
 ax.set_zticks(np.arange(-0.08, 0.08, 0.04))
 
-q_min = np.min(q)
-q_max = np.max(q)
+# Plot the source location, colored by its estimated magnitude
+scatter = ax.scatter(rq[104, 0], rq[104, 1], rq[104, 2], c=[norm_q], cmap='viridis', s=100)
 
-# Plotting scatter with actual values
-scatter = ax.scatter(rq[104, 0], rq[104, 1], rq[104, 2], c=norm_q, cmap='viridis',
-                     s=50, vmin=q_min, vmax=q_max)
-
-# Adding color bar
+# Add a color bar
 cbar = plt.colorbar(scatter, pad=0.05)
-cbar.set_label('norm_q')  # change
+cbar.set_label('norm_q')
 
+# Draw an arrow representing the estimated current vector
+ax.quiver(rq[104, 0], rq[104, 1], rq[104, 2], q[0], q[1], q[2], color='r', length=0.04,
+          normalize=True, arrow_length_ratio=0.4)
 
-ax.quiver(rq[104, 0], rq[104, 1], rq[104, 2], q[0], q[1], q[2], color='r', length=0.03,
-          normalize=True, arrow_length_ratio=0.5)
-# -------------------------------------  Plot the hemisphere surface ------------------------------------------
-
+# Plot the hemisphere surface
 radius = 0.07
 u = np.linspace(0, 2 * np.pi, 100)
 v = np.linspace(0, np.pi, 100)
-
 x_hemisphere = radius * np.outer(np.cos(u), np.sin(v))
 y_hemisphere = radius * np.outer(np.sin(u), np.sin(v))
 z_hemisphere = radius * np.outer(np.ones(np.size(u)), np.cos(v))
-
-ax.plot_surface(x_hemisphere, y_hemisphere, z_hemisphere, color='r', alpha=0.1)
+ax.plot_surface(x_hemisphere, y_hemisphere, z_hemisphere, color='b', alpha=0.1)
 
 ax.set_xlabel('X (m)')
 ax.set_ylabel('Y (m)')

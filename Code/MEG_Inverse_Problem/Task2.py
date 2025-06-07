@@ -1,113 +1,65 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
-from numpy.linalg import matrix_rank
-from utility_functions import Conv_coordinates, cartesian_to_spherical
-
-import math
+from numpy.linalg import matrix_rank, pinv, norm
 
 # ----------------------- Loading Diapole and MEG_Lead_Field_1 -----------------------
 #TODO: Load the diapole coordinates data from file
-# data1 = ...
+data1 = np.load('Dataset/MEG/Diapole_coordinates_2.npz')
 #TODO: Load the MEG lead field matrix
-# data2 = ...
+data2 = np.load('Dataset/MEG/MEG_Lead_Field_1.npz')
 #TODO: Load the MEG measurement vector
-# data3 = ...
+data3 = np.load('Dataset/MEG/MEG_Measurement_Vector.npz')
 
 #TODO: Extract the x, y, z coordinates from the daipole data
-# rq_x = ...
-# rq_y = ...
-# rq_z = ...
-# rq = ...
+rq_x = data1['x']
+rq_y = data1['y']
+rq_z = data1['z']
+rq = data1['rq']
 
-#TODO: Define the orientation vector for the diapole
-# q_0 = ...
+#TODO: Define the orientation vector for the dipole
+q_0 = np.array([0, 0, 1])  # The true orientation of the 105th source
 
 #TODO: Extract the lead field matrix and measurement vector
-# G = ...
-# B_r = ...
+G = data2['G']
+B_r = data3['B_r']
 
 #TODO: Calculate and print the rank and shape of the lead field matrix
-# Rank = ...
-# print("Shape of G = ", G.shape)
-# print("Rank of G = ", Rank)
-
+Rank = matrix_rank(G)
+print("Shape of G = ", G.shape)
+print("Rank of G = ", Rank)
 
 # --------------------------- calculate Current_source_vector ------------------------
 #TODO: Calculate the current source vector using the minimum norm solution
-# q = ...
+q = pinv(G) @ B_r
+
+#TODO: Reshape the current source vector for easier analysis
+q1 = q.reshape(105, 3)
+
 #TODO: Initialize an array to store the magnitude of each current source
-# norm_q = ...
+norm_q = np.zeros(105)
 
 #TODO: Calculate the magnitude of each current source
-# for i in range(0, 105):
-    # ...
-#TODO: Reshape the current source vector for easier analysis
-# q1 = ...
+for i in range(0, 105):
+    norm_q[i] = norm(q1[i, :])
 
 #TODO: Print the estimated diapole orientation and related information
-# print("q_0 vector = ", q1[104, :])
-# print("diapole number = ", np.argmax(norm_q), "\nmaximum norm_q = ",
-#       np.max(norm_q), "\nq_0 norm = ", norm_q[104])
-
+print("Estimated q_0 vector = ", q1[104, :])
+print("Identified dipole number = ", np.argmax(norm_q), "\nMaximum norm_q = ",
+      np.max(norm_q), "\nNorm of estimated q_0 = ", norm_q[104])
 
 #  --------------------------- Calculate the relative error --------------------------
-#TODO: Reshape the current source vector if not already done
-# q1 = ...
+# Create the true q vector
+q_true_total = np.zeros((105, 3))
+q_true_total[104, :] = q_0
+q_true_total = q_true_total.flatten()
 
 #TODO: Calculate the relative error between estimated and true diapole orientation
-# relative_q0_error = ...
-# print('The relative q0 error =', relative_q0_error)
+relative_q0_error = norm(q1[104, :] - q_0) / norm(q_0)
+print('The relative q0 error =', relative_q0_error)
+
 #TODO: Calculate the relative error across all estimated sources
-# relative_q_error = ...
-# print('The relative q error =', relative_q_error)
+relative_q_error = norm(q - q_true_total) / norm(q_true_total)
+print('The relative q error =', relative_q_error)
 
-# ------------------------------------------ Visiualize Current_source_vector -------------------------------------------------
-
-fig = plt.figure(figsize=(9, 6))
-ax = fig.add_subplot(111, projection='3d')
-plt.title('Magnitude of Current Sources', c='r')
-
-# Set size of each axis
-ax.set_box_aspect([1, 1, 1])  # This will make the axes equally spaced
-ax.set_xlim([-0.08, 0.08])
-ax.set_ylim([-0.08, 0.08])
-ax.set_zlim([-0.08, 0.08])
-
-# Set the grid grading for each axis
-ax.set_xticks(np.arange(-0.08, 0.08, 0.04))
-ax.set_yticks(np.arange(-0.08, 0.08, 0.04))
-ax.set_zticks(np.arange(-0.08, 0.08, 0.04))
-
-q_min = np.min(q)
-q_max = np.max(q)
-
-# Plotting scatter with actual values
-scatter = ax.scatter(rq_x, rq_y, rq_z, c=norm_q, cmap='viridis',
-                     s=50, vmin=q_min, vmax=q_max)
-
-# Adding color bar
-cbar = plt.colorbar(scatter, pad=0.05)
-cbar.set_label('norm_q')
-
-
-ax.quiver(rq[104, 0], rq[104, 1], rq[104, 2], q1[104, 0], q1[104, 1], q1[104, 2], color='r', length=0.04,
-          normalize=True, arrow_length_ratio=0.5)
-# -------------------------------------  Plot the hemisphere surface ------------------------------------------
-
-radius = 0.07
-u = np.linspace(0, 2 * np.pi, 100)
-v = np.linspace(0, np.pi, 100)
-
-x_hemisphere = radius * np.outer(np.cos(u), np.sin(v))
-y_hemisphere = radius * np.outer(np.sin(u), np.sin(v))
-z_hemisphere = radius * np.outer(np.ones(np.size(u)), np.cos(v))
-
-ax.plot_surface(x_hemisphere, y_hemisphere,
-                z_hemisphere, color='b', alpha=0.05)
-
-ax.set_xlabel('X (m)', c='b')
-ax.set_ylabel('Y (m)', c='b')
-ax.set_zlabel('Z (m)', c='b')
-
-plt.show()
+# --- Visualization code as provided in the problem ---
