@@ -6,44 +6,46 @@ from utility_functions import Conv_coordinates
 
 # ---------------------  Calculate Coordinates of Diapole  ------------------
 #TODO: Load the dipole coordinates from the dataset file
-data1 = np.load("Dataset/MEG/Dipole_coordinates_1.npz")  # Loading Dipole
+data1 = np.load("../Dataset/MEG/Dipole_coordinates.npz")  # Loading Dipole
 
 #TODO: Define the radius of the hemisphere
 radius = 0.07  # radius of the hemisphere
 
 #TODO: Extract the x, y, z coordinates from the loaded data
-# rq_x = ...
-# rq_y = ...
-# rq_z = ...
+rq_x = data1['x']
+rq_y = data1['y']
+rq_z = data1['z']
 
 #TODO: Concatenate the coordinates into a single array
-# rq = ...
+rq = np.vstack((rq_x, rq_y, rq_z)).T
 
 #TODO: Define the angles for the new dipole in radians
-# theta = ...
-# phi = ...
-# radius = ...
+theta = np.deg2rad(45)
+phi = np.deg2rad(45)
+# Radius is already defined
 
 #TODO: Convert spherical coordinates to Cartesian coordinates
-# x_0, y_0, z_0 = ...
+x_0, y_0, z_0 = Conv_coordinates(phi, theta, radius)
 
 #TODO: Create the position vector for the new dipole
-# rq_0 = ...
+rq_0 = np.array([x_0, y_0, z_0])
 
-#TODO: Define the orientation vector for the new dipole
-# q_0 = ...
+#TODO: Define the orientation vector for the new dipole (for visualization)
+q_0 = np.array([0, 0, 1])
 
 #TODO: Append the new dipole position to the existing coordinates
-# rq = ...
+rq = np.vstack([rq, rq_0])
+
 #TODO: Save the updated dipole coordinates to a new file
-# np.savez("Dataset/MEG/Dipole_coordinates_2.npz", x=rq[:,0], y=rq[:,1], z=rq[:,2], rq=rq)
+# This file will be used for both MEG and EEG inverse problems
+np.savez("../Dataset/MEG/Dipole_coordinates_2.npz", x=rq[:,0], y=rq[:,1], z=rq[:,2], rq=rq)
 
 
 # -------------------------------------  Visiualize Diapole  ------------------------------------------
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.set_title('Random Not Reapeted Diapole')
+ax.set_title('Random Not Repeated Diapole')
 
 # Set size of each axis
 ax.set_xlim([-0.08, 0.08])
@@ -57,12 +59,14 @@ ax.set_zticks(np.arange(-0.08, 0.08, 0.04))
 
 ax.set_box_aspect([1, 1, 1])  # This will make the axes equally spaced
 
-# Scatter plot for MEG sensors with numbers
+# Scatter plot for dipole locations
 for i, (xi, yi, zi) in enumerate(zip(rq[:,0], rq[:,1], rq[:,2])):
     ax.scatter(xi, yi, zi, color='b')
+    # Label the 105th source for clarity
     if(i == 104):
         ax.text(xi, yi, zi, f'{i+1}', color='black', fontsize=9)
 
+# Draw a quiver for the 105th source
 ax.quiver(rq_0[0], rq_0[1], rq_0[2], q_0[0], q_0[1], q_0[2], color='r', length=0.03,
           normalize=True, arrow_length_ratio=0.5)
 
@@ -82,5 +86,3 @@ ax.set_ylabel('Y (m)')
 ax.set_zlabel('Z (m)')
 
 plt.show()
-
-

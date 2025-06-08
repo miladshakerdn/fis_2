@@ -25,7 +25,7 @@ radius = 0.09  # radius of the hemisphere
 x, y, z = Conv_coordinates(phi, theta, radius)
 
 # Save sorted coordinates to a file
-np.savez("Dataset/MEG/sensor_coordinates.npz", x=x, y=y, z=z)
+np.savez("../Dataset/MEG/sensor_coordinates.npz", x=x, y=y, z=z)
 
 
 # -------------------------------------  Visualize MEG sensor ------------------------------------------
