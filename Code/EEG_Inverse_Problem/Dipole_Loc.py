@@ -6,7 +6,7 @@ from utility_functions import Conv_coordinates
 
 # ---------------------  Calculate Coordinates of Diapole  ------------------
 #TODO: Load the dipole coordinates from the dataset file
-data1 = np.load("../Dataset/MEG/Dipole_coordinates.npz")  # Loading Dipole
+data1 = np.load("../Dataset/EEG/Dipole_coordinates.npz")  # Loading Dipole
 
 #TODO: Define the radius of the hemisphere
 radius = 0.07  # radius of the hemisphere
@@ -38,7 +38,7 @@ rq = np.vstack([rq, rq_0])
 
 #TODO: Save the updated dipole coordinates to a new file
 # This file will be used for both MEG and EEG inverse problems
-np.savez("../Dataset/MEG/Dipole_coordinates_2.npz", x=rq[:,0], y=rq[:,1], z=rq[:,2], rq=rq)
+np.savez("../Dataset/EEG/Dipole_coordinates.npz", x=rq[:,0], y=rq[:,1], z=rq[:,2], rq=rq)
 
 
 # -------------------------------------  Visiualize Diapole  ------------------------------------------
